@@ -3,6 +3,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -44,11 +47,26 @@ public class Client implements Runnable {
             String kbMsg = "";
             while (true) {
                 kbMsg = kbIn.readLine();
-                out.println(kbMsg);
-                out.flush();
+                processRequest(kbMsg);
             }
         } catch (Exception e) {
             e.addSuppressed(e);
+        }
+    }
+
+    private void processRequest(String msg) throws IOException {
+        List<String> parameters = new ArrayList<>(Arrays.asList(msg.split(" ")));
+        String command = parameters.remove(0).toLowerCase();
+
+        if ("up".equals(command)) {
+            Path filePath = Paths.get(CLIENT_PATH, parameters.get(0));
+            String request = msg + " " + Files.size(filePath);
+
+            out.println(request);
+            out.flush();
+        } else {
+            out.println(msg);
+            out.flush();
         }
     }
 
@@ -79,7 +97,7 @@ public class Client implements Runnable {
         String command = parameters.remove(0).toLowerCase();
 
         if ("down".equals(command)) {
-            down(parameters.get(0));
+            down(parameters.get(0), Long.parseLong(parameters.get(1)));
         } else if ("up".equals(command)) {
             up(parameters.get(0));
         } else {
@@ -87,14 +105,14 @@ public class Client implements Runnable {
         }
     }
 
-    private void down(String fileName) {
-        FileUtils.download(CLIENT_PATH, fileName, socket);
-        System.out.println(String.format("arquivo %s salvo com sucesso!", fileName));
+    private void down(String filename, long size) {
+        FileUtils.download(CLIENT_PATH, filename, size, socket);
+        System.out.println(String.format("arquivo %s salvo com sucesso!", filename));
     }
 
-    private void up(String fileName) {
-        FileUtils.upload(CLIENT_PATH, fileName, socket);
-        System.out.println(String.format("arquivo %s transferido!", fileName));
+    private void up(String filename) {
+        FileUtils.upload(CLIENT_PATH, filename, socket);
+        System.out.println(String.format("arquivo %s transferido!", filename));
     }
 
 }

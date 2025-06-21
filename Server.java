@@ -1,4 +1,5 @@
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
@@ -59,7 +60,7 @@ public class Server {
         }
     }
 
-    private void processMessage(String msg) {
+    private void processMessage(String msg) throws IOException {
         if (msg == null || msg.isEmpty()) {
             System.out.println("Mensagem vazia");
             return;
@@ -76,7 +77,7 @@ public class Server {
                 sendFile(Integer.parseInt(parameters.get(0)) - 1);
                 break;
             case "up":
-                receiveFile(parameters.get(0));
+                receiveFile(parameters.get(0), Long.parseLong(parameters.get(1)));
                 break;
             default:
                 System.out.println("Comando desconhecido: " + command);
@@ -101,16 +102,21 @@ public class Server {
         sendMessage(sb.toString());
     }
 
-    private void sendFile(int fileIndex) {
-        String fileName = fileList.get(fileIndex).getFileName().toString();
+    private void sendFile(int fileIndex) throws IOException {
+        if (fileList == null || fileList.isEmpty()) {
+            updateFileList();
+        }
 
-        sendMessage("down " + fileName);
+        String filename = fileList.get(fileIndex).getFileName().toString();
+        long size = Files.size(fileList.get(fileIndex));
 
-        FileUtils.upload(SERVER_PATH, fileName, socket);
+        sendMessage(String.format("down %s %d", filename, size));
+
+        FileUtils.upload(SERVER_PATH, filename, socket);
     }
 
-    private void receiveFile(String fileName) {
-        FileUtils.download(SERVER_PATH, fileName, socket);
+    private void receiveFile(String filename, long size) {
+        FileUtils.download(SERVER_PATH, filename, size, socket);
         updateFileList();
     }
 

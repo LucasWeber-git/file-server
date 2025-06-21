@@ -1,5 +1,4 @@
 import java.io.FileInputStream;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.file.Files;
@@ -8,18 +7,26 @@ import java.nio.file.Paths;
 
 public class FileUtils {
 
-    public static void download(String directory, String filename, Socket socket) {
+    private static final int BUFFER_SIZE = 4096;
+
+    public static void download(String directory, String filename, long size, Socket socket) {
         System.out.println("Recebendo arquivo: " + filename);
 
         Path filePath = Paths.get(directory, filename);
 
-        try (InputStream in = socket.getInputStream();
-                OutputStream out = Files.newOutputStream(filePath)) {
+        try (OutputStream out = Files.newOutputStream(filePath)) {
 
-            byte buffer[] = new byte[4096];
-            int bytesRead;
+            byte[] buffer = new byte[BUFFER_SIZE];
+            int totalRead = 0;
 
-            while ((bytesRead = in.read(buffer)) != -1) {
+            while (totalRead < size) {
+                int bytesRead = socket.getInputStream().read(buffer);
+
+                if (bytesRead == -1) {
+                    break;
+                }
+                totalRead += bytesRead;
+
                 out.write(buffer, 0, bytesRead);
             }
         } catch (Exception e) {
@@ -32,16 +39,13 @@ public class FileUtils {
 
         Path filePath = Paths.get(directory, filename);
 
-        try {
-            FileInputStream fr = new FileInputStream(filePath.toFile());
-            byte buffer[] = new byte[4096];
+        try (FileInputStream fr = new FileInputStream(filePath.toFile())) {
+            byte buffer[];
 
-            while (fr.read(buffer) > 0) {
+            while ((buffer = fr.readNBytes(BUFFER_SIZE)).length > 0) {
                 socket.getOutputStream().write(buffer);
                 socket.getOutputStream().flush();
             }
-
-            fr.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
