@@ -116,6 +116,8 @@ public class Server {
     }
 
     private void receiveFile(String filename, long size) {
+        sendMessage(String.format("up %s", filename));
+
         FileUtils.download(SERVER_PATH, filename, size, socket);
         updateFileList();
     }
