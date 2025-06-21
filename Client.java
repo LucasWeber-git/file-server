@@ -1,13 +1,15 @@
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class Client implements Runnable {
 
-    private static final Path PATH = Paths.get("C:/Projects/file-server/files/client");
+    private static final String CLIENT_PATH = "C:/Projects/file-server/files/client/";
 
     Thread thread;
     Socket socket;
@@ -50,33 +52,49 @@ public class Client implements Runnable {
         }
     }
 
-    // TODO: implementar método (ver Server)
-    private void sendFile(int fileIndex) {
-    }
-
-    // TODO: implementar método (ver Server)
-    private void receiveFile(String fileName) {
-    }
-
     @Override
     public void run() {
-        waitForMessages();
+        waitForResponses();
     }
 
-    private void waitForMessages() {
+    private void waitForResponses() {
         String msg = "";
         try {
             while (true) {
                 msg = in.readLine();
-                processMessage(msg);
+                processResponse(msg);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    // TODO: interpretar a mensage recebido. Obs: tem que receber também o nome do arquivo
-    private void processMessage(String msg) {
-        System.out.println(msg);
+    private void processResponse(String msg) throws IOException {
+        if (msg == null || msg.isEmpty()) {
+            System.out.println("Response vazio");
+            return;
+        }
+
+        List<String> parameters = new ArrayList<>(Arrays.asList(msg.split(" ")));
+        String command = parameters.remove(0).toLowerCase();
+
+        if ("down".equals(command)) {
+            down(parameters.get(0));
+        } else if ("up".equals(command)) {
+            up(parameters.get(0));
+        } else {
+            System.out.println(msg);
+        }
     }
+
+    private void down(String fileName) {
+        FileUtils.download(CLIENT_PATH, fileName, socket);
+        System.out.println(String.format("arquivo %s salvo com sucesso!", fileName));
+    }
+
+    private void up(String fileName) {
+        FileUtils.upload(CLIENT_PATH, fileName, socket);
+        System.out.println(String.format("arquivo %s transferido!", fileName));
+    }
+
 }

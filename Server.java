@@ -30,7 +30,7 @@ public class Server {
     private void waitForConnection() {
         try (ServerSocket serverSocket = new ServerSocket(8084)) {
             while (true) {
-                System.out.println("Aguardando conexão...");
+                System.out.println("Aguardando conexao...");
                 socket = serverSocket.accept();
 
                 in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -91,29 +91,27 @@ public class Server {
 
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < fileList.size(); i++) {
-            sb.append(String.format("%d - %s\n", i + 1, fileList.get(i).getFileName()));
+            sb.append(String.format("%d - %s", i + 1, fileList.get(i).getFileName()));
+
+            if (i < fileList.size() - 1) {
+                sb.append("\n");
+            }
         }
 
         sendMessage(sb.toString());
     }
 
     private void sendFile(int fileIndex) {
-        System.out.println("Enviando arquivo: " + fileList.get(fileIndex).getFileName());
+        String fileName = fileList.get(fileIndex).getFileName().toString();
 
-        FileUtils.upload(fileList.get(fileIndex), socket);
+        sendMessage("down " + fileName);
 
-        sendMessage(String.format("arquivo %s salvo com sucesso!", fileList.get(fileIndex).getFileName()));
+        FileUtils.upload(SERVER_PATH, fileName, socket);
     }
 
     private void receiveFile(String fileName) {
-        System.out.println("Recebendo arquivo: " + fileName);
-
-        Path filePath = Paths.get(SERVER_PATH, fileName);
-        FileUtils.download(filePath, socket);
-
+        FileUtils.download(SERVER_PATH, fileName, socket);
         updateFileList();
-
-        sendMessage(String.format("arquivo %s transferido!", fileName));
     }
 
     private void updateFileList() {
